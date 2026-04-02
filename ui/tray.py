@@ -1,18 +1,27 @@
+import os
+import sys
 import threading
-from PIL import Image, ImageDraw
+from PIL import Image
 import pystray
 
 
+def _get_icon_path():
+    """Get the path to the icon file, works both in dev and PyInstaller."""
+    if getattr(sys, '_MEIPASS', None):
+        return os.path.join(sys._MEIPASS, 'assets', 'icon.png')
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets', 'icon.png')
+
+
 def _create_icon_image():
-    """Create a simple dictionary icon programmatically."""
+    """Load the app icon from file."""
+    icon_path = _get_icon_path()
+    if os.path.exists(icon_path):
+        return Image.open(icon_path).resize((64, 64))
+    # Fallback: simple blue square
+    from PIL import ImageDraw
     img = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    # Book shape
     draw.rounded_rectangle([8, 8, 56, 56], radius=6, fill='#1565C0')
-    # Pages
-    draw.rectangle([14, 12, 16, 52], fill='#BBDEFB')
-    # Letter D
-    draw.text((26, 16), 'D', fill='white')
     return img
 
 
