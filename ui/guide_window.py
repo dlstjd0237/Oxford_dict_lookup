@@ -1,32 +1,30 @@
 import logging
-import json
 import os
+import tempfile
 import tkinter as tk
 
 import config
 
 logger = logging.getLogger(__name__)
 
+# Session-scoped flag file in %TEMP% — wiped on reboot (Windows clears temp),
+# so "don't show again" only suppresses the guide until the PC restarts.
+_HIDE_GUIDE_FLAG = os.path.join(tempfile.gettempdir(), 'oxford_dict_lookup_hide_guide.flag')
+
 
 def _should_show_guide():
-    try:
-        with open(config.SETTINGS_PATH, 'r', encoding='utf-8') as f:
-            return not json.load(f).get('hide_guide', False)
-    except Exception:
-        return True
+    return not os.path.exists(_HIDE_GUIDE_FLAG)
 
 
 def _set_hide_guide(val):
-    os.makedirs(os.path.dirname(config.SETTINGS_PATH), exist_ok=True)
-    data = {}
     try:
-        with open(config.SETTINGS_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        if val:
+            with open(_HIDE_GUIDE_FLAG, 'w', encoding='utf-8') as f:
+                f.write('1')
+        elif os.path.exists(_HIDE_GUIDE_FLAG):
+            os.remove(_HIDE_GUIDE_FLAG)
     except Exception:
-        pass
-    data['hide_guide'] = val
-    with open(config.SETTINGS_PATH, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False)
+        logger.debug("Failed to update hide_guide flag", exc_info=True)
 
 
 class GuideWindow:
